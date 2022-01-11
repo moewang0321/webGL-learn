@@ -1,0 +1,109 @@
+<!--
+ * @Author: moeWang
+ * @Date: 2022-01-11 13:16:25
+ * @LastEditTime: 2022-01-11 15:09:48
+ * @LastEditors: moeWang
+ * @Description: 
+ * @FilePath: \webGL-learn\3.html
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <canvas id="canvas" width="700" height="500"></canvas>
+
+</body>
+
+<script>
+    var canvas = document.getElementById('canvas')
+    var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl')
+
+    var vertexShaderSource = `
+        precision mediump float;
+        attribute vec2 a_Position;
+        attribute vec2 a_Screen_Size;
+        void main() {
+            vec2 position = (a_Position / a_Screen_Size) * 2.0 -1.0;
+            position = position * vec2(1.0,-1.0);
+            gl_Position = vec4(position,0.0,1.0);
+            gl_PointSize = 5.0;
+        }
+        
+    `
+    var vertexShader = gl.createShader(gl.VERTEX_SHADER)
+    gl.shaderSource(vertexShader, vertexShaderSource)
+    gl.compileShader(vertexShader)
+    var fragmentShaderSource = `
+        precision mediump float;
+        uniform vec4 u_Color;
+        void main() {
+            vec4 color = u_Color / vec4(255,255,255,1);
+            gl_FragColor = color;
+        }
+    `
+    var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)
+    gl.shaderSource(fragmentShader, fragmentShaderSource)
+    gl.compileShader(fragmentShader)
+
+    var program = gl.createProgram()
+    gl.attachShader(program, vertexShader)
+    gl.attachShader(program, fragmentShader)
+    gl.linkProgram(program)
+
+    gl.useProgram(program)
+
+    let color = {
+        r: 255,
+        g: 255,
+        b: 0,
+        a: 1
+    }
+
+    let u_Color = gl.getUniformLocation(program, 'u_Color')
+
+    gl.uniform4f(u_Color, color.r, color.g, color.b, color.a)
+
+    let a_Screen_Size = gl.getAttribLocation(program, 'a_Screen_Size')
+    gl.vertexAttrib2f(a_Screen_Size, canvas.width, canvas.height)
+
+
+
+
+    var positions = []
+
+    let a_Position = gl.getAttribLocation(program, 'a_Position')
+    gl.enableVertexAttribArray(a_Position)
+
+    let buffer = gl.createBuffer()
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+    gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0)
+
+    //设置清屏颜色为黑色。
+    gl.clearColor(0, 0, 0, 1);
+    canvas.addEventListener('click', e => {
+        var x = e.pageX,
+            y = e.pageY
+        positions.push(x)
+        positions.push(y)
+        if (positions.length > 0) {
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.DYNAMIC_DRAW)
+        }
+        render(gl)
+    })
+
+    function render(gl) {
+        gl.clear(gl.COLOR_BUFFER_BIT)
+        if (positions.length > 0) {
+            gl.drawArrays(gl.LINE_LOOP, 0, positions.length / 2)
+        }
+    }
+</script>
+
+</html>
